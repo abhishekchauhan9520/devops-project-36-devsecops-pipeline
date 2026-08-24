@@ -8,9 +8,6 @@ on:
 permissions:
   contents: read
   security-events: write
-  id-token: write
-  attestations: write
-  packages: write
 
 jobs:
   unit-tests:
@@ -31,7 +28,6 @@ jobs:
         with:
           languages: python
           queries: security-extended
-      - uses: github/codeql-action/autobuild@v4
       - uses: github/codeql-action/analyze@v4
 
   secrets:
@@ -110,16 +106,15 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - id: meta
-        run: echo "image=ghcr.io/${GITHUB_REPOSITORY,,}:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
-      - uses: docker/build-push-action@v7
+      - id: build
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: true
-          tags: ${{ steps.meta.outputs.image }}
+          tags: ghcr.io/${{ github.repository }}:${{ github.sha }}
           labels: org.opencontainers.image.revision=${{ github.sha }}
       - name: Generate build provenance
         uses: actions/attest-build-provenance@v3
         with:
           subject-name: ghcr.io/${{ github.repository }}
-          subject-digest: ${{ steps.meta.outputs.image }}
+          subject-digest: ${{ steps.build.outputs.digest }}
